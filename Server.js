@@ -54,7 +54,7 @@ const sslOptions = {
 };
 
 // Create an HTTPS server
-const PORT = 443;
+const PORT = 8000;
 https.createServer(sslOptions, app).listen(PORT, () => {
   console.log(`Secure server running on port ${PORT}`);
 });
