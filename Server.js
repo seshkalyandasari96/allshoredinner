@@ -1,4 +1,6 @@
 // server.js
+const https = require('https'); // Import HTTPS module
+const fs = require('fs');       // Import file system module
 const bodyParser = require("body-parser");
 const express = require("express");
 const mongoose = require("mongoose");
@@ -21,10 +23,10 @@ mongoose.connect('mongodb+srv://ManoharErra:Manohar517*@dinnerplanner.3bq5i.mong
 .then(() => console.log('Connected to MongoDB'))
 .catch((err) => console.error('MongoDB connection error:', err));
 
-
+// CORS setup
 app.use(
   cors({
-    origin:  "*",
+    origin: "*",
     methods: "GET,POST,PUT,DELETE",
     credentials: true,
   })
@@ -40,13 +42,28 @@ app.use((req, res, next) => {
 });
 
 app.use(bodyParser.json());
-app.get('/hello',(req,res)=>{res.json({message:"Hello World"})})
+app.get('/hello', (req, res) => { res.json({ message: "Hello World" }) });
 
 app.use('/user', UserRoutes);
 app.use('/', AttendanceRoutes);
 
-// Listen on a port
-const PORT = 8000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-})
+// Load SSL Certificates
+const sslOptions = {
+  key: fs.readFileSync('/etc/letsencrypt/live/dinner-backend.eastus.cloudapp.azure.com/privkey.pem'),
+  cert: fs.readFileSync('/etc/letsencrypt/live/dinner-backend.eastus.cloudapp.azure.com/fullchain.pem'),
+};
+
+// Create an HTTPS server
+const PORT = 443;
+https.createServer(sslOptions, app).listen(PORT, () => {
+  console.log(`Secure server running on port ${PORT}`);
+});
+
+// Optionally, redirect HTTP to HTTPS (Optional HTTP Server on Port 80)
+const http = require('http');
+http.createServer((req, res) => {
+  res.writeHead(301, { "Location": "https://" + req.headers['host'] + req.url });
+  res.end();
+}).listen(80, () => {
+  console.log('HTTP server running on port 80 and redirecting to HTTPS');
+});
