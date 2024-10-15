@@ -116,7 +116,7 @@ exports.forgotPassword = async (req, res) => {
         await user.save();
 
         // Modify the resetUrl to include the reset token as a query parameter
-        const resetUrl = `http://localhost:3000/Components/Forgotpassword?token=${resetToken}`;
+        const resetUrl = `http://allshoredinner-fyhsdqcwg5ake7f9.eastus-01.azurewebsites.net/Components/Forgotpassword?token=${resetToken}`;
 
         await transporter.sendMail({
             to: email,
