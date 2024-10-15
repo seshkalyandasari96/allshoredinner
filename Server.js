@@ -1,0 +1,52 @@
+// server.js
+const bodyParser = require("body-parser");
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const multer = require("multer");
+const path = require("path");
+const { env } = require("process");
+const UserRoutes = require('./Routes/UserRoutes');
+const AttendanceRoutes = require('./Routes/AttendanceRoutes');
+
+const app = express();
+
+app.use(express.json()); // Middleware to parse JSON
+
+// Connect to MongoDB
+mongoose.connect('mongodb+srv://ManoharErra:Manohar517*@dinnerplanner.3bq5i.mongodb.net/', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('Connected to MongoDB'))
+.catch((err) => console.error('MongoDB connection error:', err));
+
+
+app.use(
+  cors({
+    origin:  "*",
+    methods: "GET,POST,PUT,DELETE",
+    credentials: true,
+  })
+);
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "OPTIONS, GET, POST, PUT, PATCH, DELETE"
+  );
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  next();
+});
+
+app.use(bodyParser.json());
+app.get('/hello',(req,res)=>{res.json({message:"Hello World"})})
+
+app.use('/user', UserRoutes);
+app.use('/', AttendanceRoutes);
+
+// Listen on a port
+const PORT = 8000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+})
