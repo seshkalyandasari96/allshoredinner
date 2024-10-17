@@ -27,7 +27,7 @@ async function sendNoShowNotificationEmail(employeeEmail, employeeName, noShowCo
                 body {
                     font-family: 'Arial', sans-serif;
                     background-color: #f4f4f4;
-                    margin: 0;
+                    margin: 0;  
                     padding: 0;
                 }
                 .email-container {
@@ -260,39 +260,41 @@ cron.schedule('45 18 * * 1-5', () => {
     console.log('Sending dinner reminders...');
     sendRemindersToAllEmployees();
 });
+    
 
 cron.schedule('0 22 * * 1-5', async () => {
     console.log('Checking for No Shows...');
     try {
         const today = new Date();
-        const dateString = today.toISOString().split('T')[0]; // Format YYYY-MM-DD
+        const formattedDate = today.toDateString(); // Format "Tue Oct 22 2024"
 
-        const attendances = await Attendance.find({ date: dateString });
+        // Fetch all attendances where date is today, attending is true, but couponUsed is false
+        const attendances = await Attendance.find({ date: formattedDate, attending: true, couponUsed: 'no' });
         
-        const userIdsWithDinner = new Set(attendances.map(attendance => attendance.employeeId));
+        // Extract employee IDs who haven't used their coupons (i.e., potential no-shows)
+        const userIdsWithNoShow = new Set(attendances.map(attendance => attendance.employeeId));
 
-        // Fetch all users
-        const users = await User.find();
-        
+        // Fetch all users who are relevant to today's dinner
+        const users = await User.find({ _id: { $in: [...userIdsWithNoShow] } });
+
         for (const user of users) {
-            if (!userIdsWithDinner.has(user._id.toString())) {
-                // User did not show up for dinner
-                user.noShowCount += 1;
-                await user.save();
-                await sendNoShowNotificationEmail(user.email, user.fullName, user.noShowCount, dateString);
+            // User did not use their coupon but had opted to attend dinner
+            user.noShowCount += 1;
+            await user.save();
+            await sendNoShowNotificationEmail(user.email, user.fullName, user.noShowCount, formattedDate);
 
-                // Check if the user should be blocked
-                if (user.noShowCount >= 3 && !user.isBlocked) {
-                    user.isBlocked = true;
-                    await user.save();
-                    console.log(`User ${user.fullName} has been blocked due to multiple No Shows.`);
-                }
+            // Check if the user should be blocked due to 3 or more no-shows
+            if (user.noShowCount >= 3 && !user.isBlocked) {
+                user.isBlocked = true;
+                await user.save();
+                console.log(`User ${user.fullName} has been blocked due to multiple No Shows.`);
             }
         }
     } catch (error) {
         console.error('Error checking No Shows:', error);
     }
 });
+
 
 
 
